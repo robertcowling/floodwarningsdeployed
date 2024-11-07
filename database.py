@@ -1,6 +1,7 @@
 from replit import db
 from datetime import datetime, timedelta
 import json
+from collections import OrderedDict
 
 def _normalize_timestamp(timestamp):
     """Normalize timestamp to nearest 15-minute interval"""
@@ -23,6 +24,22 @@ def _cleanup_intermediate_timestamps():
     for key in keys_to_remove:
         del db[key]
 
+class OrderedJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, OrderedDict):
+            return dict(obj)
+        return super().default(obj)
+
+def _create_ordered_response(data):
+    """Create consistently ordered response dictionary in the format:
+    timestamp, severes, warnings, alerts"""
+    return OrderedDict([
+        ('timestamp', data.get('timestamp')),
+        ('severes', data.get('severes', 0)),
+        ('warnings', data.get('warnings', 0)),
+        ('alerts', data.get('alerts', 0))
+    ])
+
 def store_counts(timestamp, data):
     """Store flood counts in the database with timestamp validation"""
     try:
@@ -31,10 +48,15 @@ def store_counts(timestamp, data):
         print(f"Normalizing timestamp from {timestamp} to {normalized_timestamp}")
         
         # Update the timestamp in the data
-        data['timestamp'] = normalized_timestamp
+        ordered_data = _create_ordered_response({
+            'timestamp': normalized_timestamp,
+            'severes': data.get('severes', 0),
+            'warnings': data.get('warnings', 0),
+            'alerts': data.get('alerts', 0)
+        })
         
-        # Store the data with normalized timestamp
-        db[normalized_timestamp] = json.dumps(data)
+        # Store the data with normalized timestamp using custom encoder
+        db[normalized_timestamp] = json.dumps(ordered_data, cls=OrderedJSONEncoder, sort_keys=False)
         print(f"Successfully stored counts in database at {normalized_timestamp}")
         
         # Periodically clean up intermediate timestamps
@@ -48,15 +70,19 @@ def get_latest_counts():
         keys = list(db.keys())
         if not keys:
             print("No data found in database")
-            return {'alerts': 0, 'warnings': 0, 'severes': 0, 'timestamp': datetime.now().isoformat()}
+            return _create_ordered_response({
+                'timestamp': datetime.now().isoformat()
+            })
         
         latest_key = max(keys)
         data = json.loads(db[latest_key])
         print(f"Retrieved latest counts: {data}")
-        return data
+        return _create_ordered_response(data)
     except Exception as e:
         print(f"Error getting latest counts: {e}")
-        return {'alerts': 0, 'warnings': 0, 'severes': 0, 'timestamp': datetime.now().isoformat()}
+        return _create_ordered_response({
+            'timestamp': datetime.now().isoformat()
+        })
 
 def get_counts_between_dates(start_date, end_date):
     """Get flood counts between two dates"""
@@ -69,16 +95,20 @@ def get_counts_between_dates(start_date, end_date):
         for key in db.keys():
             if start_str <= key <= end_str:
                 data = json.loads(db[key])
-                results.append(data)
+                results.append(_create_ordered_response(data))
         
         sorted_results = sorted(results, key=lambda x: x['timestamp'])
         print(f"Found {len(sorted_results)} records")
         
         # Return at least one data point if no data is found
         if not sorted_results:
-            return [{'alerts': 0, 'warnings': 0, 'severes': 0, 'timestamp': datetime.now().isoformat()}]
+            return [_create_ordered_response({
+                'timestamp': datetime.now().isoformat()
+            })]
         
         return sorted_results
     except Exception as e:
         print(f"Error getting counts between dates: {e}")
-        return [{'alerts': 0, 'warnings': 0, 'severes': 0, 'timestamp': datetime.now().isoformat()}]
+        return [_create_ordered_response({
+            'timestamp': datetime.now().isoformat()
+        })]

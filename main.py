@@ -1,11 +1,25 @@
 from flask import Flask, render_template, jsonify, request
+from flask.json.provider import DefaultJSONProvider
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 import flood_service
 import database
 import json
+from collections import OrderedDict
+
+class OrderedJSONProvider(DefaultJSONProvider):
+    def dumps(self, obj, **kwargs):
+        # Ensure that the order is preserved during JSON serialization
+        kwargs['sort_keys'] = False
+        return super().dumps(obj, **kwargs)
+
+    def default(self, obj):
+        if isinstance(obj, OrderedDict):
+            return dict(obj)
+        return super().default(obj)
 
 app = Flask(__name__)
+app.json = OrderedJSONProvider(app)
 
 # Initialize the scheduler with timezone awareness
 scheduler = BackgroundScheduler()
@@ -50,14 +64,14 @@ def get_summary():
     
     data = database.get_counts_between_dates(start_date, end_date)
     
-    summary = {
-        'max_alerts': max(item['alerts'] for item in data),
-        'max_warnings': max(item['warnings'] for item in data),
-        'max_severes': max(item['severes'] for item in data),
-        'avg_alerts': sum(item['alerts'] for item in data) / len(data),
-        'avg_warnings': sum(item['warnings'] for item in data) / len(data),
-        'avg_severes': sum(item['severes'] for item in data) / len(data),
-    }
+    summary = OrderedDict([
+        ('max_alerts', max(item['alerts'] for item in data)),
+        ('max_warnings', max(item['warnings'] for item in data)),
+        ('max_severes', max(item['severes'] for item in data)),
+        ('avg_alerts', sum(item['alerts'] for item in data) / len(data)),
+        ('avg_warnings', sum(item['warnings'] for item in data) / len(data)),
+        ('avg_severes', sum(item['severes'] for item in data) / len(data)),
+    ])
     
     return jsonify(summary)
 

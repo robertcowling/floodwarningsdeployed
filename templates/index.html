@@ -41,9 +41,21 @@
             <div class="card-body">
                 <h6>Available Endpoints:</h6>
                 <ul>
-                    <li><code>/api/current</code> - Get current flood counts</li>
-                    <li><code>/api/historical?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD</code> - Get historical data</li>
-                    <li><code>/api/summary</code> - Get summary statistics</li>
+                    <li>
+                        <code>/api/current</code> - Get current flood counts
+                        <br>
+                        <small class="text-muted">Returns: {timestamp, severes, warnings, alerts}</small>
+                    </li>
+                    <li>
+                        <code>/api/historical?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD</code> - Get historical data
+                        <br>
+                        <small class="text-muted">Returns: Array of {timestamp, severes, warnings, alerts}</small>
+                    </li>
+                    <li>
+                        <code>/api/summary</code> - Get summary statistics
+                        <br>
+                        <small class="text-muted">Returns summary statistics for the last 7 days</small>
+                    </li>
                 </ul>
             </div>
         </div>
