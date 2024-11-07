@@ -7,11 +7,14 @@ import json
 
 app = Flask(__name__)
 
-# Initialize the scheduler
+# Initialize the scheduler with timezone awareness
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=flood_service.fetch_and_store_flood_data, 
-                 trigger="interval", 
-                 minutes=15)
+scheduler.add_job(
+    func=flood_service.fetch_and_store_flood_data, 
+    trigger="cron", 
+    minute="*/15",  # Run exactly at 0, 15, 30, 45 minutes
+    id='fetch_flood_data'
+)
 scheduler.start()
 
 @app.route('/')

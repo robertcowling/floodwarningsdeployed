@@ -1,13 +1,44 @@
 from replit import db
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 
+def _normalize_timestamp(timestamp):
+    """Normalize timestamp to nearest 15-minute interval"""
+    dt = datetime.fromisoformat(timestamp)
+    minutes = dt.minute
+    normalized_minutes = (minutes // 15) * 15
+    return dt.replace(minute=normalized_minutes, second=0, microsecond=0).isoformat()
+
+def _cleanup_intermediate_timestamps():
+    """Clean up timestamps that don't align with 15-minute intervals"""
+    keys_to_remove = []
+    for key in db.keys():
+        try:
+            timestamp = datetime.fromisoformat(key)
+            if timestamp.minute % 15 != 0 or timestamp.second != 0:
+                keys_to_remove.append(key)
+        except (ValueError, TypeError):
+            continue
+    
+    for key in keys_to_remove:
+        del db[key]
+
 def store_counts(timestamp, data):
-    """Store flood counts in the database"""
+    """Store flood counts in the database with timestamp validation"""
     try:
-        print(f"Storing counts for timestamp: {timestamp}")
-        db[timestamp] = json.dumps(data)
-        print("Successfully stored counts in database")
+        # Normalize the timestamp to nearest 15-minute interval
+        normalized_timestamp = _normalize_timestamp(timestamp)
+        print(f"Normalizing timestamp from {timestamp} to {normalized_timestamp}")
+        
+        # Update the timestamp in the data
+        data['timestamp'] = normalized_timestamp
+        
+        # Store the data with normalized timestamp
+        db[normalized_timestamp] = json.dumps(data)
+        print(f"Successfully stored counts in database at {normalized_timestamp}")
+        
+        # Periodically clean up intermediate timestamps
+        _cleanup_intermediate_timestamps()
     except Exception as e:
         print(f"Error storing counts in database: {e}")
 
