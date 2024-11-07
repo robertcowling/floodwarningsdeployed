@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>UK Flood Monitoring Dashboard</h1>
+        <p class="lead">Real-time flood monitoring data from the Environment Agency</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Current Status</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="currentChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Historical Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">API Documentation</h5>
+            </div>
+            <div class="card-body">
+                <h6>Available Endpoints:</h6>
+                <ul>
+                    <li><code>/api/current</code> - Get current flood counts</li>
+                    <li><code>/api/historical?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD</code> - Get historical data</li>
+                    <li><code>/api/summary</code> - Get summary statistics</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/charts.js"></script>
+{% endblock %}

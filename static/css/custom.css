@@ -1,0 +1,17 @@
+.card {
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: var(--bs-dark);
+}
+
+canvas {
+    max-height: 300px;
+}
+
+code {
+    background-color: var(--bs-dark);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+}
