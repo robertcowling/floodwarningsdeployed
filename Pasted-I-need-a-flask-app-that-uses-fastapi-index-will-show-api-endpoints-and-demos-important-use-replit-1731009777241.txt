@@ -1,0 +1,88 @@
+I need a flask app  that uses fastapi. index will show api endpoints and demos. important use replit  Database (Key/Value) not postgresql. app will hit http://environment.data.gov.uk/flood-monitoring/id/floods  every 15 mins and save the numbers of alerts, wrarnings and severes for that timestep to the database. the endpoint will serve these cnts between two user specified dates or default to last 24hrs. think of some other nice endpoints too.
+Endpoint normally looks like this, but the items list is currently empty.
+
+{ 
+  "@context" : "http://environment.data.gov.uk/flood-monitoring/meta/context.jsonld" ,
+  "meta" : { 
+    "publisher" : "Environment Agency" ,
+    "licence" : "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" ,
+    "documentation" : "http://environment.data.gov.uk/flood-monitoring/doc/reference" ,
+    "version" : "0.9" ,
+    "comment" : "Status: Beta service" ,
+    "hasFormat" : [ "http://environment.data.gov.uk/flood-monitoring/id/floods.csv", "http://environment.data.gov.uk/flood-monitoring/id/floods.rdf", "http://environment.data.gov.uk/flood-monitoring/id/floods.ttl", "http://environment.data.gov.uk/flood-monitoring/id/floods.html" ]
+  }
+   ,
+  "items" : [  ]
+}
+
+details on api as follows:
+
+Flood warnings
+The Environment Agency issue warnings of floods that cover specific warning or alert areas. The floods API provides a listing of all current such warnings and is updated every 15 minutes.
+
+A warning may be at one of four possible severity levels:
+
+Level	Name	Meaning
+1	Severe Flood Warning	Severe Flooding, Danger to Life.
+2	Flood Warning	Flooding is Expected, Immediate Action Required.
+3	Flood Alert	Flooding is Possible, Be Prepared.
+4	Warning no Longer in Force	The warning is no longer in force
+API
+An update to the Flood Warning API took place on 30 June 2020. Although as much as possible has been done to ensure limited knock on effects to end users, please contact us via the feedback links to report any issue. The main change is in the way the @id and URI of the individual flood warning is constructed.
+
+The list of current flood warnings:
+
+http://environment.data.gov.uk/flood-monitoring/id/floods
+Supports the following filter parameter:
+
+Query	Meaning
+?min-severity=x	Return only warnings which at least as severe as level x
+?county=x	Return only warnings applying to flood areas whose county name contains the string x. x can be a list of county names separated by "," in which case alerts which mention any of the named counties will be returned.
+?lat=y&long=x&dist=r	Return only warnings applying to flood areas which are within rkm of the given latitude/longitude (in WGS84 coordinates), this may be approximated by a bounding box.
+So for example, to find all warnings that are currently in effect use:
+
+http://environment.data.gov.uk/flood-monitoring/id/floods?min-severity=3
+To find all warnings that apply to areas in Somerset use:
+
+http://environment.data.gov.uk/flood-monitoring/id/floods?county=Somerset
+Each individual warning with have a URI given by the @id field in the data:
+
+http://environment.data.gov.uk/flood-monitoring/id/floods/{id}
+The {id} section of this URI is taken from the value of the floodAreaID. Therefore the current warning for a flood area (if any warning exists) will always have the same URI.
+
+The severity level and the message field may change through the lifetime of the warning. The data for a warning will include the time at which the severity last changed. At some point after a warning is no longer in force it will disappear from the data feed and the URI for that warning will cease to resolve. If no warning is currently in place for that flood area, then attempting to resolve the URI will return a 404 status code.
+
+For approximately 24 hours after a warning has been in place for a flood area, the severity level will be set to 4, "Warning no Longer in Force", before the warning response is removed altogether.
+
+Returned data
+Field	Meaning	Type	Occurs
+description	Descriptive name for the flood area affected	xsd:string	
+eaAreaName	Name of the relevant Environment Agency Area	xsd:string	
+eaRegionName	No longer used	xsd:string	
+floodArea	URI for the flood alert or flood warning area affected		
+floodAreaID	Internal identifier for the flood alert or flood warning area affected	xsd:string	
+isTidal	True if the flood is tidal, false if not (fluvial or Groundwater)	xsd:boolean	
+message	The current situation message, also known as the real time commentary	xsd:string	optional
+severity	The severity of the warning as a text label: 'Flood Alert', 'Flood Warning', 'Severe Flood Warning' or 'Warning no Longer in Force'	xsd:string	
+severityLevel	Severity level code: 1 = 'Severe Flood Warning', 2 = 'Flood Warning', 3 = 'Flood Alert', 4 = 'Warning no Longer in Force'	xsd:int	
+timeMessageChanged	The date and time when the message was last changed	xsd:dateTime	
+timeRaised	The date and time the warning was last reviewed. Usually (but not always) this leads to a change in the message or severity	xsd:dateTime	
+timeSeverityChanged	The date and time when the severity level was last changed	xsd:dateTime	
+Structure of nested field floodArea:
+
+Field	Meaning	Type	Occurs
+county	The name of the county intersecting the flood area, as entered by the Flood Incident Management Team	xsd:string	
+notation	Unique identifier code for the flood area affected	xsd:string	
+polygon	The boundary of the area encoded as a geoJSON polygon	xsd:anyURI	
+riverOrSea	Name of the river or sea area linked to the flood area	xsd:string	optional
+Flood areas
+The flood areas API provide information on the geographic regions to which a given flood alert or warning may apply. These comprise Flood Alert Areas and Flood Warning Areas. A Flood Alert Area is a geographical area where it is possible for flooding to occur from rivers, sea and in some locations, groundwater. A single Flood Alert Area may cover a large portion of the floodplain, may contain multiple river catchments of similar characteristics and may contain a number of Flood Warning Areas. A Flood Warning Area is a geographical area where Environment Agency expect flooding to occur and which they provide a Flood Warning Service.
+
+Full information on the areas is available from the Environment Agency Spatial Data Catalogue as a downloadable file and via a Web Feature Service or Web Mapping Service. For convenience we here provide the feature information for each area as a simple JSON format, including a specification of the polygon for each area (as a geoJSON feature in WGS84 coordinates). A typical application should maintain a local copy of the geographic information rather that reply on on-demand downloads of the rather large polygon files.
+
+Each flood warning provides a link (floodArea) to the URI of the flood area to which it applies.
+
+API
+To describe an individual area
+
+http://environment.data.gov.uk/flood-monitoring/id/floodAreas/{area-code}
