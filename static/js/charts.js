@@ -118,7 +118,18 @@ async function updateTrendChart() {
             return;
         }
 
-        const timestamps = data.map(d => new Date(d.timestamp).toLocaleTimeString());
+        const timestamps = data.map(d => {
+            const date = new Date(d.timestamp);
+            return date.toLocaleDateString('en-GB', { 
+                weekday: 'short',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).replace(',', '');
+        });
+
         const alerts = data.map(d => d.alerts || 0);
         const warnings = data.map(d => d.warnings || 0);
         const severes = data.map(d => d.severes || 0);
@@ -128,6 +139,13 @@ async function updateTrendChart() {
             data: {
                 labels: timestamps,
                 datasets: [
+                    {
+                        label: 'Total Warnings',
+                        data: data.map(d => (d.alerts || 0) + (d.warnings || 0) + (d.severes || 0)),
+                        borderColor: 'rgb(255, 255, 255)',
+                        fill: false,
+                        borderWidth: 2
+                    },
                     {
                         label: 'Alerts',
                         data: alerts,
