@@ -11,7 +11,7 @@ class OrderedJSONProvider(DefaultJSONProvider):
     def dumps(self, obj, **kwargs):
         kwargs['sort_keys'] = False
         return super().dumps(obj, **kwargs)
-
+    
     def default(self, obj):
         if isinstance(obj, OrderedDict):
             return dict(obj)
@@ -34,11 +34,6 @@ scheduler.start()
 def index():
     """Render the main page with API documentation and demos"""
     return render_template('index.html')
-
-@app.route('/historical')
-def historical():
-    """Render the historical data page"""
-    return render_template('historical.html')
 
 @app.errorhandler(404)
 def page_not_found(e):

@@ -1,3 +1,33 @@
+/* Chart container styles */
+.chart-container {
+    position: relative;
+    height: 500px;
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+
+/* Card enhancements */
+.card {
+    box-shadow: 0 0 1rem rgba(0,0,0,.15);
+    margin-bottom: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    padding: 1.25rem;
+    background-color: transparent;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-title {
+    margin-bottom: 0;
+    font-weight: 500;
+}
+
 /* Sidebar Styles */
 .sidebar {
     position: fixed;
@@ -33,32 +63,6 @@
     letter-spacing: 0.1em;
 }
 
-/* Main Content Area */
-.chart-container {
-    position: relative;
-    height: 400px;
-    width: 100%;
-    margin-bottom: 1rem;
-}
-
-/* Card Styles */
-.card {
-    margin-bottom: 1.5rem;
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
-
-.card-header {
-    background-color: var(--bs-body-bg);
-    border-bottom: 2px solid var(--bs-primary);
-    padding: 1rem;
-}
-
-.card-title {
-    margin-bottom: 0;
-    font-weight: 500;
-}
-
 /* Loading States */
 .loading-spinner {
     display: none;
@@ -67,6 +71,9 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 1000;
+    background: rgba(255,255,255,0.8);
+    padding: 2rem;
+    border-radius: 0.5rem;
 }
 
 .loading .loading-spinner {
@@ -77,6 +84,26 @@
 
 .loading canvas {
     opacity: 0.5;
+}
+
+/* Time range selector */
+#timeRangeSelector {
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid rgba(0,0,0,.125);
+    background-color: #fff;
+}
+
+/* Table Styles */
+.table {
+    margin-bottom: 0;
+}
+
+.table code {
+    background-color: rgba(0,0,0,.05);
+    padding: .2em .4em;
+    border-radius: 3px;
+    font-size: 85%;
 }
 
 /* Mobile Responsiveness */
@@ -98,18 +125,28 @@
     }
 
     .chart-container {
-        height: 300px;
+        height: 350px;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .content-header {
+        padding: 1rem;
     }
 }
 
-/* Table Styles */
-.table {
-    margin-bottom: 0;
+/* Enhanced sidebar */
+.nav-sidebar .nav-link {
+    padding: .75rem 1rem;
 }
 
-.table code {
-    background-color: var(--bs-light);
-    padding: .2em .4em;
-    border-radius: 3px;
-    font-size: 85%;
+.nav-sidebar .nav-link.active {
+    background-color: var(--bs-primary);
+    color: #fff;
+}
+
+.sidebar-mini.sidebar-collapse .main-sidebar:hover {
+    box-shadow: 0 0 1rem rgba(0,0,0,.15);
 }
