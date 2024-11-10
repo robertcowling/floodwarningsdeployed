@@ -1,20 +1,52 @@
-// Update charts every minute
-setInterval(updateCharts, 60000);
+// Chart.js configuration and setup
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+Chart.defaults.font.size = 13;
+Chart.defaults.color = '#333333';
 
 let currentChart = null;
 let trendChart = null;
+let selectedTimeRange = 3; // Default to 3 days
+
+// Initialize time range selector
+document.addEventListener('DOMContentLoaded', () => {
+    const selector = document.getElementById('timeRangeSelector');
+    if (selector) {
+        selector.addEventListener('change', (e) => {
+            selectedTimeRange = parseInt(e.target.value);
+            updateCharts();
+        });
+    }
+});
+
+// Update charts every minute
+setInterval(updateCharts, 60000);
 
 async function updateCharts() {
     try {
         console.log('Starting chart updates...');
+        showLoading();
         await Promise.all([
             updateCurrentChart(),
             updateTrendChart()
         ]);
+        hideLoading();
         console.log('Charts updated successfully');
     } catch (error) {
         console.error('Error updating charts:', error);
+        hideLoading();
     }
+}
+
+function showLoading() {
+    document.querySelectorAll('.chart-container').forEach(container => {
+        container.classList.add('loading');
+    });
+}
+
+function hideLoading() {
+    document.querySelectorAll('.chart-container').forEach(container => {
+        container.classList.remove('loading');
+    });
 }
 
 async function createChart(ctx, config) {
@@ -44,6 +76,13 @@ async function updateCurrentChart() {
             return;
         }
 
+        // Update last updated timestamp
+        const lastUpdated = document.getElementById('lastUpdated');
+        if (lastUpdated) {
+            const date = new Date(data.timestamp);
+            lastUpdated.textContent = `Last updated: ${date.toLocaleString()}`;
+        }
+
         const ctx = document.getElementById('currentChart');
         if (!ctx) {
             console.error('Current chart canvas not found');
@@ -62,9 +101,9 @@ async function updateCurrentChart() {
                         data.severes || 0
                     ],
                     backgroundColor: [
-                        'rgba(255, 193, 7, 0.5)',  // Yellow for alerts
-                        'rgba(255, 87, 34, 0.5)',  // Orange for warnings
-                        'rgba(244, 67, 54, 0.5)'   // Red for severe
+                        'rgba(255, 193, 7, 0.8)',  // Yellow for alerts
+                        'rgba(255, 87, 34, 0.8)',  // Orange for warnings
+                        'rgba(244, 67, 54, 0.8)'   // Red for severe
                     ],
                     borderColor: [
                         'rgb(255, 193, 7)',
@@ -76,6 +115,16 @@ async function updateCurrentChart() {
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw}`;
+                            }
+                        }
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
@@ -100,7 +149,11 @@ async function updateCurrentChart() {
 async function updateTrendChart() {
     try {
         console.log('Fetching historical data...');
-        const response = await fetch('/api/historical');
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - selectedTimeRange);
+        
+        const response = await fetch(`/api/historical?start_date=${startDate.toISOString().split('T')[0]}&end_date=${endDate.toISOString().split('T')[0]}`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -123,52 +176,60 @@ async function updateTrendChart() {
             return date.toLocaleDateString('en-GB', { 
                 weekday: 'short',
                 day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
+                month: 'short',
                 hour: '2-digit',
                 minute: '2-digit'
-            }).replace(',', '');
+            });
         });
 
-        const alerts = data.map(d => d.alerts || 0);
-        const warnings = data.map(d => d.warnings || 0);
-        const severes = data.map(d => d.severes || 0);
-        
         const config = {
             type: 'line',
             data: {
                 labels: timestamps,
                 datasets: [
                     {
-                        label: 'Total Warnings',
-                        data: data.map(d => (d.alerts || 0) + (d.warnings || 0) + (d.severes || 0)),
-                        borderColor: 'rgb(255, 255, 255)',
-                        fill: false,
-                        borderWidth: 2
-                    },
-                    {
                         label: 'Alerts',
-                        data: alerts,
+                        data: data.map(d => d.alerts || 0),
                         borderColor: 'rgb(255, 193, 7)',
-                        fill: false
+                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                        fill: true
                     },
                     {
                         label: 'Warnings',
-                        data: warnings,
+                        data: data.map(d => d.warnings || 0),
                         borderColor: 'rgb(255, 87, 34)',
-                        fill: false
+                        backgroundColor: 'rgba(255, 87, 34, 0.1)',
+                        fill: true
                     },
                     {
                         label: 'Severe',
-                        data: severes,
+                        data: data.map(d => d.severes || 0),
                         borderColor: 'rgb(244, 67, 54)',
-                        fill: false
+                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                        fill: true
                     }
                 ]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    tooltip: {
+                        position: 'nearest'
+                    }
+                },
                 scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 8
+                        }
+                    },
                     y: {
                         beginAtZero: true,
                         ticks: {
@@ -189,20 +250,9 @@ async function updateTrendChart() {
     }
 }
 
-// Wait for Chart.js to load before initializing
-function initializeCharts() {
-    if (typeof Chart === 'undefined') {
-        console.log('Waiting for Chart.js to load...');
-        setTimeout(initializeCharts, 100);
-        return;
-    }
-    console.log('Chart.js loaded, initializing charts...');
-    updateCharts();
-}
-
 // Initialize charts when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeCharts);
+    document.addEventListener('DOMContentLoaded', updateCharts);
 } else {
-    initializeCharts();
+    updateCharts();
 }

@@ -9,7 +9,6 @@ from collections import OrderedDict
 
 class OrderedJSONProvider(DefaultJSONProvider):
     def dumps(self, obj, **kwargs):
-        # Ensure that the order is preserved during JSON serialization
         kwargs['sort_keys'] = False
         return super().dumps(obj, **kwargs)
 
@@ -26,7 +25,7 @@ scheduler = BackgroundScheduler()
 scheduler.add_job(
     func=flood_service.fetch_and_store_flood_data, 
     trigger="cron", 
-    minute="*/15",  # Run exactly at 0, 15, 30, 45 minutes
+    minute="*/15",
     id='fetch_flood_data'
 )
 scheduler.start()
@@ -35,6 +34,16 @@ scheduler.start()
 def index():
     """Render the main page with API documentation and demos"""
     return render_template('index.html')
+
+@app.route('/historical')
+def historical():
+    """Render the historical data page"""
+    return render_template('historical.html')
+
+@app.route('/api-docs')
+def api_docs():
+    """Render the API documentation page"""
+    return render_template('api-docs.html')
 
 @app.route('/api/current')
 def get_current_counts():
@@ -46,7 +55,7 @@ def get_current_counts():
 def get_historical_data():
     """Get historical flood counts between two dates"""
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=1)  # Default to last 24 hours
+    start_date = end_date - timedelta(days=3)  # Default to last 3 days
     
     if 'start_date' in request.args:
         start_date = datetime.strptime(request.args['start_date'], '%Y-%m-%d')

@@ -1,62 +1,85 @@
 {% extends "base.html" %}
 
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1>UK Flood Monitoring Dashboard</h1>
-        <p class="lead">Real-time flood monitoring data from the Environment Agency</p>
-    </div>
-</div>
+{% block header %}Dashboard{% endblock %}
 
-<div class="row mt-4">
-    <div class="col-12 col-lg-6">
+{% block content %}
+<div class="row g-3">
+    <!-- Current Status Card -->
+    <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">Current Status</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Current Flood Status</h5>
+                <div class="card-tools">
+                    <span class="badge bg-info" id="lastUpdated"></span>
+                </div>
             </div>
             <div class="card-body">
-                <canvas id="currentChart"></canvas>
+                <div class="chart-container">
+                    <div class="loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <canvas id="currentChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-12 col-lg-6">
+
+    <!-- Historical Trend Card -->
+    <div class="col-12">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title">Historical Trend</h5>
             </div>
             <div class="card-body">
-                <canvas id="trendChart"></canvas>
+                <div class="chart-container">
+                    <div class="loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <canvas id="trendChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="row mt-4">
+    <!-- API Documentation Card -->
     <div class="col-12">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title">API Documentation</h5>
             </div>
             <div class="card-body">
-                <h6>Available Endpoints:</h6>
-                <ul>
-                    <li>
-                        <a href="/api/current" target="_blank"><code>/api/current</code></a>
-                        <br>
-                        <small class="text-muted">Returns: {timestamp, severes, warnings, alerts}</small>
-                    </li>
-                    <li>
-                        <a href="/api/historical?start_date=2024-11-06&end_date=2024-11-07" target="_blank"><code>/api/historical?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD</code></a>
-                        <br>
-                        <small class="text-muted">Returns: Array of {timestamp, severes, warnings, alerts}</small>
-                    </li>
-                    <li>
-                        <a href="/api/summary" target="_blank"><code>/api/summary</code></a>
-                        <br>
-                        <small class="text-muted">Returns summary statistics for the last 7 days</small>
-                    </li>
-                </ul>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Endpoint</th>
+                                <th>Description</th>
+                                <th>Response Format</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>/api/current</code></td>
+                                <td>Get current flood status</td>
+                                <td><code>{timestamp, severes, warnings, alerts}</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>/api/historical</code></td>
+                                <td>Get historical data with optional date range</td>
+                                <td><code>[{timestamp, severes, warnings, alerts}, ...]</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>/api/summary</code></td>
+                                <td>Get statistical summary</td>
+                                <td><code>{max_alerts, max_warnings, max_severes, ...}</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
