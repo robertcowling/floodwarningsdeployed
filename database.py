@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import json
 from collections import OrderedDict
 from statistics import mean
+import zlib
 
 def _normalize_timestamp(timestamp):
     """Normalize timestamp to nearest 15-minute interval"""
@@ -129,7 +130,7 @@ def get_latest_counts():
             'timestamp': datetime.now().isoformat()
         })
 
-def get_counts_between_dates(start_date, end_date):
+def get_counts_between_dates(start_date, end_date, page=1, per_page=100):
     """Get flood counts between two dates with automatic aggregation for longer periods"""
     try:
         start_str = start_date.isoformat()
@@ -145,27 +146,35 @@ def get_counts_between_dates(start_date, end_date):
         # Calculate time difference
         time_diff = end_date - start_date
         
-        # Apply aggregation based on time range
-        if time_diff > timedelta(days=7):
+        # Apply more aggressive aggregation based on time range
+        if time_diff > timedelta(days=30):
+            # For periods > 30 days, aggregate by 12 hours
+            results = _aggregate_data(results, interval_hours=12)
+        elif time_diff > timedelta(days=7):
             # For periods > 7 days, aggregate by 6 hours
             results = _aggregate_data(results, interval_hours=6)
         elif time_diff > timedelta(days=2):
-            # For periods > 2 days, aggregate by 2 hours
-            results = _aggregate_data(results, interval_hours=2)
+            # For periods > 2 days, aggregate by 3 hours
+            results = _aggregate_data(results, interval_hours=3)
         elif time_diff > timedelta(days=1):
             # For periods > 1 day, aggregate by 1 hour
             results = _aggregate_data(results, interval_hours=1)
         
+        # Sort results
         sorted_results = sorted(results, key=lambda x: x['timestamp'])
-        print(f"Found {len(sorted_results)} records")
+        
+        # Implement pagination
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated_results = sorted_results[start_idx:end_idx]
         
         # Return at least one data point if no data is found
-        if not sorted_results:
+        if not paginated_results:
             return [_create_ordered_response({
                 'timestamp': datetime.now().isoformat()
             })]
         
-        return sorted_results
+        return paginated_results
     except Exception as e:
         print(f"Error getting counts between dates: {e}")
         return [_create_ordered_response({
