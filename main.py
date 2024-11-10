@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, abort
+from flask import Flask, render_template, jsonify, request
 from flask.json.provider import DefaultJSONProvider
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
@@ -9,9 +9,10 @@ from collections import OrderedDict
 
 class OrderedJSONProvider(DefaultJSONProvider):
     def dumps(self, obj, **kwargs):
+        # Ensure that the order is preserved during JSON serialization
         kwargs['sort_keys'] = False
         return super().dumps(obj, **kwargs)
-    
+
     def default(self, obj):
         if isinstance(obj, OrderedDict):
             return dict(obj)
@@ -25,7 +26,7 @@ scheduler = BackgroundScheduler()
 scheduler.add_job(
     func=flood_service.fetch_and_store_flood_data, 
     trigger="cron", 
-    minute="*/15",
+    minute="*/15",  # Run exactly at 0, 15, 30, 45 minutes
     id='fetch_flood_data'
 )
 scheduler.start()
@@ -35,57 +36,44 @@ def index():
     """Render the main page with API documentation and demos"""
     return render_template('index.html')
 
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
-
 @app.route('/api/current')
 def get_current_counts():
     """Get the most recent flood counts"""
-    try:
-        current_data = database.get_latest_counts()
-        return jsonify(current_data)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    current_data = database.get_latest_counts()
+    return jsonify(current_data)
 
 @app.route('/api/historical')
 def get_historical_data():
     """Get historical flood counts between two dates"""
-    try:
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=3)  # Default to last 3 days
-        
-        if 'start_date' in request.args:
-            start_date = datetime.strptime(request.args['start_date'], '%Y-%m-%d')
-        if 'end_date' in request.args:
-            end_date = datetime.strptime(request.args['end_date'], '%Y-%m-%d')
-        
-        historical_data = database.get_counts_between_dates(start_date, end_date)
-        return jsonify(historical_data)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=1)  # Default to last 24 hours
+    
+    if 'start_date' in request.args:
+        start_date = datetime.strptime(request.args['start_date'], '%Y-%m-%d')
+    if 'end_date' in request.args:
+        end_date = datetime.strptime(request.args['end_date'], '%Y-%m-%d')
+    
+    historical_data = database.get_counts_between_dates(start_date, end_date)
+    return jsonify(historical_data)
 
 @app.route('/api/summary')
 def get_summary():
     """Get summary statistics of flood events"""
-    try:
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=7)  # Last week summary
-        
-        data = database.get_counts_between_dates(start_date, end_date)
-        
-        summary = OrderedDict([
-            ('max_alerts', max(item['alerts'] for item in data)),
-            ('max_warnings', max(item['warnings'] for item in data)),
-            ('max_severes', max(item['severes'] for item in data)),
-            ('avg_alerts', sum(item['alerts'] for item in data) / len(data)),
-            ('avg_warnings', sum(item['warnings'] for item in data) / len(data)),
-            ('avg_severes', sum(item['severes'] for item in data) / len(data)),
-        ])
-        
-        return jsonify(summary)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=7)  # Last week summary
+    
+    data = database.get_counts_between_dates(start_date, end_date)
+    
+    summary = OrderedDict([
+        ('max_alerts', max(item['alerts'] for item in data)),
+        ('max_warnings', max(item['warnings'] for item in data)),
+        ('max_severes', max(item['severes'] for item in data)),
+        ('avg_alerts', sum(item['alerts'] for item in data) / len(data)),
+        ('avg_warnings', sum(item['warnings'] for item in data) / len(data)),
+        ('avg_severes', sum(item['severes'] for item in data) / len(data)),
+    ])
+    
+    return jsonify(summary)
 
 if __name__ == '__main__':
     # Fetch initial data

@@ -1,152 +1,17 @@
-/* Chart container styles */
-.chart-container {
-    position: relative;
-    height: 500px;
-    width: 100%;
-    margin-bottom: 1.5rem;
-}
-
-/* Card enhancements */
 .card {
-    box-shadow: 0 0 1rem rgba(0,0,0,.15);
     margin-bottom: 1.5rem;
-    border-radius: 0.5rem;
 }
 
 .card-header {
-    padding: 1.25rem;
-    background-color: transparent;
-    border-bottom: 1px solid rgba(0,0,0,.125);
+    background-color: var(--bs-dark);
 }
 
-.card-body {
-    padding: 1.5rem;
+canvas {
+    max-height: 300px;
 }
 
-.card-title {
-    margin-bottom: 0;
-    font-weight: 500;
-}
-
-/* Sidebar Styles */
-.sidebar {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 100;
-    padding: 48px 0 0;
-    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
-}
-
-.sidebar .nav-link {
-    font-weight: 500;
-    color: var(--bs-body-color);
-    padding: .5rem 1rem;
+code {
+    background-color: var(--bs-dark);
+    padding: 0.2rem 0.4rem;
     border-radius: 0.25rem;
-    margin: 0.2rem 1rem;
-}
-
-.sidebar .nav-link:hover {
-    color: var(--bs-primary);
-    background-color: var(--bs-light);
-}
-
-.sidebar .nav-link.active {
-    color: var(--bs-primary);
-    background-color: var(--bs-light);
-}
-
-.sidebar-heading {
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-}
-
-/* Loading States */
-.loading-spinner {
-    display: none;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
-    background: rgba(255,255,255,0.8);
-    padding: 2rem;
-    border-radius: 0.5rem;
-}
-
-.loading .loading-spinner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.loading canvas {
-    opacity: 0.5;
-}
-
-/* Time range selector */
-#timeRangeSelector {
-    padding: 0.5rem 1rem;
-    border-radius: 0.25rem;
-    border: 1px solid rgba(0,0,0,.125);
-    background-color: #fff;
-}
-
-/* Table Styles */
-.table {
-    margin-bottom: 0;
-}
-
-.table code {
-    background-color: rgba(0,0,0,.05);
-    padding: .2em .4em;
-    border-radius: 3px;
-    font-size: 85%;
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 767.98px) {
-    .sidebar {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        z-index: 1000;
-        padding-top: 1.5rem;
-    }
-
-    .navbar-toggler {
-        padding: .25rem .75rem;
-        font-size: 1.25rem;
-        background-color: transparent;
-        border: 1px solid var(--bs-primary);
-    }
-
-    .chart-container {
-        height: 350px;
-    }
-    
-    .card-body {
-        padding: 1rem;
-    }
-    
-    .content-header {
-        padding: 1rem;
-    }
-}
-
-/* Enhanced sidebar */
-.nav-sidebar .nav-link {
-    padding: .75rem 1rem;
-}
-
-.nav-sidebar .nav-link.active {
-    background-color: var(--bs-primary);
-    color: #fff;
-}
-
-.sidebar-mini.sidebar-collapse .main-sidebar:hover {
-    box-shadow: 0 0 1rem rgba(0,0,0,.15);
 }
