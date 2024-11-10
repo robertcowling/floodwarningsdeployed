@@ -4,33 +4,14 @@
 
 {% block content %}
 <div class="row g-3">
-    <!-- Current Status Card -->
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title">Current Flood Status</h5>
-                <div class="card-tools">
-                    <span class="badge bg-info" id="lastUpdated"></span>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <div class="loading-spinner">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                    <canvas id="currentChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Historical Trend Card -->
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title">Historical Trend</h5>
+                <div class="card-tools">
+                    <span class="badge bg-info" id="lastUpdated"></span>
+                </div>
             </div>
             <div class="card-body">
                 <div class="chart-container">
@@ -45,11 +26,30 @@
         </div>
     </div>
 
+    <!-- Current Status Card -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Current Flood Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <div class="loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <canvas id="currentChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- API Documentation Card -->
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title">API Documentation</h5>
+                <h5 class="card-title">API Endpoints</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
