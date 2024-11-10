@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
+<div class="row" id="overview">
     <div class="col-12">
         <h1>UK Flood Monitoring Dashboard</h1>
         <p class="lead">Real-time flood monitoring data from the Environment Agency</p>
     </div>
 </div>
 
-<div class="row mt-4">
+<div class="row mt-4" id="current-status">
     <div class="col-12 col-lg-6">
         <div class="card">
             <div class="card-header">
@@ -20,7 +20,7 @@
         </div>
     </div>
     
-    <div class="col-12 col-lg-6">
+    <div class="col-12 col-lg-6" id="historical-trend">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title">Historical Trend</h5>
@@ -32,7 +32,7 @@
     </div>
 </div>
 
-<div class="row mt-4">
+<div class="row mt-4" id="api-docs">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
@@ -65,4 +65,22 @@
 
 {% block scripts %}
 <script src="/static/js/charts.js"></script>
+<script>
+// Add smooth scrolling behavior
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href').substring(1);
+        const targetElement = document.getElementById(targetId);
+        if (targetElement) {
+            targetElement.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+});
+
+// Toggle sidebar on mobile
+document.querySelector('.navbar-toggler').addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('show');
+});
+</script>
 {% endblock %}

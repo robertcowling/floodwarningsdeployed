@@ -1,3 +1,4 @@
+/* Base styles */
 .card {
     margin-bottom: 1.5rem;
 }
@@ -14,4 +15,63 @@ code {
     background-color: var(--bs-dark);
     padding: 0.2rem 0.4rem;
     border-radius: 0.25rem;
+}
+
+/* Sidebar styles */
+.sidebar {
+    width: 250px;
+    min-height: 100vh;
+    background-color: var(--bs-dark);
+    border-right: 1px solid var(--bs-border-color);
+    transition: transform 0.3s ease-in-out;
+}
+
+.sidebar-sticky {
+    position: sticky;
+    top: 0;
+    padding: 1rem;
+}
+
+.sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.nav-link {
+    color: var(--bs-light);
+    padding: 0.5rem 1rem;
+    transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+    background-color: var(--bs-secondary);
+}
+
+/* Main content */
+.main-content {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Responsive design */
+@media (max-width: 991.98px) {
+    .sidebar {
+        position: fixed;
+        z-index: 1030;
+        transform: translateX(-100%);
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .navbar-toggler {
+        display: block;
+    }
+}
+
+@media (min-width: 992px) {
+    .navbar-toggler {
+        display: none;
+    }
 }
