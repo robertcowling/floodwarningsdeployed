@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row" id="overview">
+    <div class="col-12">
+        <h1>Current Flood Status</h1>
+        <p class="lead">Real-time flood monitoring data from the Environment Agency</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Current Status</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="currentChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Status Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Level</th>
+                                <th>Description</th>
+                                <th>Current Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="table-danger">
+                                <td>Severe Warning</td>
+                                <td>Severe Flooding, Danger to Life</td>
+                                <td id="severeCount">-</td>
+                            </tr>
+                            <tr class="table-warning">
+                                <td>Flood Warning</td>
+                                <td>Flooding is Expected, Immediate Action Required</td>
+                                <td id="warningCount">-</td>
+                            </tr>
+                            <tr class="table-info">
+                                <td>Flood Alert</td>
+                                <td>Flooding is Possible, Be Prepared</td>
+                                <td id="alertCount">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/current.js"></script>
+{% endblock %}

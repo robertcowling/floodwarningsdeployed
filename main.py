@@ -33,8 +33,18 @@ scheduler.start()
 
 @app.route('/')
 def index():
-    """Render the main page with API documentation and demos"""
-    return render_template('index.html')
+    """Render the trend page (new homepage)"""
+    return render_template('trend.html')
+
+@app.route('/current')
+def current():
+    """Render the current warnings status page"""
+    return render_template('current.html')
+
+@app.route('/api')
+def api_docs():
+    """Render the API documentation page"""
+    return render_template('api.html')
 
 @app.route('/api/current')
 def get_current_counts():

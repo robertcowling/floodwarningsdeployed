@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>API Documentation</h1>
+        <p class="lead">Comprehensive documentation for the Environment Agency Flood Warning Summary API endpoints</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Available Endpoints</h5>
+            </div>
+            <div class="card-body">
+                <!-- Current Status Endpoint -->
+                <div class="mb-4">
+                    <h4><code class="bg-dark">/api/current</code></h4>
+                    <p>Returns the most recent flood warning counts.</p>
+                    
+                    <h6>Request Example:</h6>
+                    <pre><code>GET /api/current</code></pre>
+                    
+                    <h6>Response Example:</h6>
+                    <pre><code>{
+    "timestamp": "2024-11-10T20:15:00",
+    "severes": 0,
+    "warnings": 2,
+    "alerts": 5
+}</code></pre>
+                </div>
+
+                <!-- Historical Data Endpoint -->
+                <div class="mb-4">
+                    <h4><code class="bg-dark">/api/historical</code></h4>
+                    <p>Returns historical flood warning counts between specified dates.</p>
+                    
+                    <h6>Query Parameters:</h6>
+                    <ul>
+                        <li><code>start_date</code> (optional) - Start date in YYYY-MM-DD format</li>
+                        <li><code>end_date</code> (optional) - End date in YYYY-MM-DD format</li>
+                    </ul>
+                    
+                    <h6>Request Example:</h6>
+                    <pre><code>GET /api/historical?start_date=2024-11-09&end_date=2024-11-10</code></pre>
+                    
+                    <h6>Response Example:</h6>
+                    <pre><code>[
+    {
+        "timestamp": "2024-11-09T12:00:00",
+        "severes": 0,
+        "warnings": 3,
+        "alerts": 7
+    },
+    {
+        "timestamp": "2024-11-09T12:15:00",
+        "severes": 0,
+        "warnings": 3,
+        "alerts": 8
+    }
+]</code></pre>
+                </div>
+
+                <!-- Summary Endpoint -->
+                <div class="mb-4">
+                    <h4><code class="bg-dark">/api/summary</code></h4>
+                    <p>Returns summary statistics for the last 7 days.</p>
+                    
+                    <h6>Request Example:</h6>
+                    <pre><code>GET /api/summary</code></pre>
+                    
+                    <h6>Response Example:</h6>
+                    <pre><code>{
+    "max_alerts": 10,
+    "max_warnings": 5,
+    "max_severes": 1,
+    "avg_alerts": 4.5,
+    "avg_warnings": 2.1,
+    "avg_severes": 0.1
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 mt-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Usage Information</h5>
+            </div>
+            <div class="card-body">
+                <h6>Rate Limiting</h6>
+                <p>The API implements the following rate limits:</p>
+                <ul>
+                    <li>60 requests per minute per IP address</li>
+                    <li>1000 requests per hour per IP address</li>
+                </ul>
+
+                <h6>Data Update Frequency</h6>
+                <p>Flood warning data is updated every 15 minutes from the Environment Agency API.</p>
+
+                <h6>Example Use Cases</h6>
+                <ul>
+                    <li>Real-time monitoring of flood warnings</li>
+                    <li>Historical trend analysis</li>
+                    <li>Statistical analysis of flood events</li>
+                    <li>Integration with emergency response systems</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
