@@ -1,8 +1,5 @@
 // Initialize trend chart
 let trendChart = null;
-let retryCount = 0;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000; // 2 seconds
 
 // Function to show loading state
 function showLoading() {
@@ -27,67 +24,6 @@ function hideLoading() {
         loadingDiv.remove();
     }
     document.getElementById('trendChart').style.opacity = '1';
-}
-
-// Function to show error message
-function showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.id = 'chartError';
-    errorDiv.className = 'alert alert-danger mt-3';
-    errorDiv.innerHTML = `
-        <strong>Error:</strong> ${message}
-        <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
-    `;
-    document.getElementById('trendChart').parentElement.appendChild(errorDiv);
-}
-
-// Function to validate data structure
-function validateData(data) {
-    if (!Array.isArray(data)) {
-        throw new Error('Invalid data format: expected array');
-    }
-    
-    if (data.length === 0) {
-        return true; // Empty data is valid
-    }
-    
-    const requiredFields = ['timestamp', 'severes', 'warnings', 'alerts'];
-    const isValid = data.every(item => {
-        return requiredFields.every(field => {
-            const value = item[field];
-            if (field === 'timestamp') {
-                return typeof value === 'string' && !isNaN(Date.parse(value));
-            }
-            return typeof value === 'number' && !isNaN(value);
-        });
-    });
-    
-    if (!isValid) {
-        throw new Error('Invalid data structure: missing or invalid fields');
-    }
-    
-    return true;
-}
-
-// Function to fetch data with retry logic
-async function fetchDataWithRetry(url, retryCount = 0) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        validateData(data);
-        return data;
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        if (retryCount < MAX_RETRIES) {
-            console.log(`Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-            return fetchDataWithRetry(url, retryCount + 1);
-        }
-        throw error;
-    }
 }
 
 // Function to update chart based on selected time period
@@ -117,20 +53,9 @@ async function updateTrendChart() {
 
     try {
         showLoading();
-        // Remove any existing error messages
-        const existingError = document.getElementById('chartError');
-        if (existingError) {
-            existingError.remove();
-        }
-
-        const url = `/api/historical?start_date=${formattedStartDate}&end_date=${formattedEndDate}`;
-        const data = await fetchDataWithRetry(url);
+        const response = await fetch(`/api/historical?start_date=${formattedStartDate}&end_date=${formattedEndDate}`);
+        const data = await response.json();
         
-        if (!data || data.length === 0) {
-            showError('No data available for the selected time period');
-            return;
-        }
-
         const timestamps = data.map(d => {
             const date = new Date(d.timestamp);
             return date.toLocaleDateString('en-GB', {
@@ -175,7 +100,7 @@ async function updateTrendChart() {
                 ]
             },
             options: {
-                animation: false,
+                animation: false, // Disable animations for better performance
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
@@ -209,8 +134,7 @@ async function updateTrendChart() {
         const ctx = document.getElementById('trendChart').getContext('2d');
         trendChart = new Chart(ctx, config);
     } catch (error) {
-        console.error('Error updating trend chart:', error);
-        showError(`Failed to load trend data: ${error.message}. Please try again later.`);
+        console.error('Error fetching trend data:', error);
     } finally {
         hideLoading();
     }
