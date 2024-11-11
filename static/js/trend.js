@@ -1,6 +1,5 @@
 // Initialize trend chart
 let trendChart = null;
-let cachedData = {};
 
 // Function to show loading state
 function showLoading() {
@@ -25,35 +24,6 @@ function hideLoading() {
         loadingDiv.remove();
     }
     document.getElementById('trendChart').style.opacity = '1';
-}
-
-// Function to get cached data or fetch from API
-async function getData(timeRange, startDate, endDate) {
-    const cacheKey = `flood_data_${timeRange}`;
-    const cacheExpiry = 15 * 60 * 1000; // 15 minutes
-
-    // Check cache first
-    const cachedItem = localStorage.getItem(cacheKey);
-    if (cachedItem) {
-        const { timestamp, data } = JSON.parse(cachedItem);
-        if (Date.now() - timestamp < cacheExpiry) {
-            console.log('Using cached data');
-            return data;
-        }
-        localStorage.removeItem(cacheKey); // Clear expired cache
-    }
-
-    // Fetch new data
-    const response = await fetch(`/api/historical?start_date=${startDate}&end_date=${endDate}`);
-    const data = await response.json();
-    
-    // Cache the new data
-    localStorage.setItem(cacheKey, JSON.stringify({
-        timestamp: Date.now(),
-        data: data
-    }));
-    
-    return data;
 }
 
 // Function to update chart based on selected time period
@@ -83,7 +53,8 @@ async function updateTrendChart() {
 
     try {
         showLoading();
-        const data = await getData(timeRange, formattedStartDate, formattedEndDate);
+        const response = await fetch(`/api/historical?start_date=${formattedStartDate}&end_date=${formattedEndDate}`);
+        const data = await response.json();
         
         const timestamps = data.map(d => {
             const date = new Date(d.timestamp);
@@ -129,14 +100,13 @@ async function updateTrendChart() {
                 ]
             },
             options: {
-                animation: false, // Disable all animations
+                animation: false, // Disable animations for better performance
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     decimation: {
                         enabled: true,
-                        algorithm: 'lttb', // Largest-Triangle-Three-Buckets algorithm
-                        samples: 100 // Maximum number of points to display
+                        algorithm: 'min-max'
                     }
                 },
                 scales: {
@@ -152,14 +122,6 @@ async function updateTrendChart() {
                         ticks: {
                             stepSize: 1
                         }
-                    }
-                },
-                elements: {
-                    point: {
-                        radius: 0 // Hide points for better performance
-                    },
-                    line: {
-                        tension: 0.1 // Reduce line smoothing for better performance
                     }
                 }
             }
@@ -177,15 +139,6 @@ async function updateTrendChart() {
         hideLoading();
     }
 }
-
-// Clear cache when page loads to ensure fresh data
-window.addEventListener('load', () => {
-    Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('flood_data_')) {
-            localStorage.removeItem(key);
-        }
-    });
-});
 
 // Update chart when time range changes
 document.getElementById('timeRange').addEventListener('change', updateTrendChart);
