@@ -1,8 +1,10 @@
-from replit import db
 from datetime import datetime, timedelta
-import json
 from collections import OrderedDict
+from storage import GCSStorage
 from statistics import mean
+
+# Initialize GCS storage
+storage = GCSStorage()
 
 def _normalize_timestamp(timestamp):
     """Normalize timestamp to nearest 15-minute interval"""
@@ -10,26 +12,6 @@ def _normalize_timestamp(timestamp):
     minutes = dt.minute
     normalized_minutes = (minutes // 15) * 15
     return dt.replace(minute=normalized_minutes, second=0, microsecond=0).isoformat()
-
-def _cleanup_intermediate_timestamps():
-    """Clean up timestamps that don't align with 15-minute intervals"""
-    keys_to_remove = []
-    for key in db.keys():
-        try:
-            timestamp = datetime.fromisoformat(key)
-            if timestamp.minute % 15 != 0 or timestamp.second != 0:
-                keys_to_remove.append(key)
-        except (ValueError, TypeError):
-            continue
-    
-    for key in keys_to_remove:
-        del db[key]
-
-class OrderedJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, OrderedDict):
-            return dict(obj)
-        return super().default(obj)
 
 def _create_ordered_response(data):
     """Create consistently ordered response dictionary"""
@@ -100,27 +82,23 @@ def store_counts(timestamp, data):
             'alerts': data.get('alerts', 0)
         })
         
-        # Store the data with normalized timestamp using custom encoder
-        db[normalized_timestamp] = json.dumps(ordered_data, cls=OrderedJSONEncoder, sort_keys=False)
-        print(f"Successfully stored counts in database at {normalized_timestamp}")
+        # Store the data with normalized timestamp
+        storage.store_counts(normalized_timestamp, ordered_data)
+        print(f"Successfully stored counts in GCS at {normalized_timestamp}")
         
-        # Periodically clean up intermediate timestamps
-        _cleanup_intermediate_timestamps()
     except Exception as e:
-        print(f"Error storing counts in database: {e}")
+        print(f"Error storing counts in GCS: {e}")
 
 def get_latest_counts():
     """Get the most recent flood counts"""
     try:
-        keys = list(db.keys())
-        if not keys:
-            print("No data found in database")
+        data = storage.get_latest_counts()
+        if not data:
+            print("No data found in storage")
             return _create_ordered_response({
                 'timestamp': datetime.now().isoformat()
             })
         
-        latest_key = max(keys)
-        data = json.loads(db[latest_key])
         print(f"Retrieved latest counts: {data}")
         return _create_ordered_response(data)
     except Exception as e:
@@ -136,11 +114,7 @@ def get_counts_between_dates(start_date, end_date):
         end_str = end_date.isoformat()
         
         print(f"Fetching counts between {start_str} and {end_str}")
-        results = []
-        for key in db.keys():
-            if start_str <= key <= end_str:
-                data = json.loads(db[key])
-                results.append(_create_ordered_response(data))
+        results = storage.get_counts_between_dates(start_date, end_date)
         
         # Calculate time difference
         time_diff = end_date - start_date
