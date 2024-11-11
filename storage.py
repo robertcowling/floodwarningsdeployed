@@ -71,6 +71,7 @@ class GCSStorage:
             
         except Exception as e:
             print(f"Error initializing Google Cloud Storage: {e}")
+            print("Stack trace:", traceback.format_exc())
             print("Falling back to local file storage")
             self.use_local_storage = True
             os.makedirs('data_cache', exist_ok=True)
@@ -79,10 +80,19 @@ class GCSStorage:
         """Ensure the bucket exists, create if it doesn't"""
         try:
             self.bucket = self.client.get_bucket(self.bucket_name)
-            print(f"Using existing bucket: {self.bucket_name}")
-        except Exception:
-            print(f"Creating new bucket: {self.bucket_name}")
-            self.bucket = self.client.create_bucket(self.bucket_name)
+            print(f"Successfully accessed existing bucket: {self.bucket_name}")
+            print(f"Bucket location: {self.bucket.location}")
+            print(f"Bucket storage class: {self.bucket.storage_class}")
+        except Exception as e:
+            print(f"Bucket {self.bucket_name} not found, attempting to create...")
+            try:
+                self.bucket = self.client.create_bucket(self.bucket_name)
+                print(f"Successfully created new bucket: {self.bucket_name}")
+                print(f"Bucket location: {self.bucket.location}")
+                print(f"Bucket storage class: {self.bucket.storage_class}")
+            except Exception as create_error:
+                print(f"Failed to create bucket: {create_error}")
+                raise
     
     def _get_local_path(self, filename):
         """Get path for local file storage"""
@@ -108,6 +118,7 @@ class GCSStorage:
                 return data
         except Exception as e:
             print(f"Error reading local CSV: {e}")
+            print("Stack trace:", traceback.format_exc())
             return []
     
     def _write_local_csv(self, filename, data):
@@ -118,20 +129,28 @@ class GCSStorage:
                 writer = csv.DictWriter(f, fieldnames=['timestamp', 'severes', 'warnings', 'alerts'])
                 writer.writeheader()
                 writer.writerows(data)
-            print(f"Wrote {len(data)} records to local file: {filepath}")
+            print(f"Successfully wrote {len(data)} records to local file: {filepath}")
         except Exception as e:
             print(f"Error writing local CSV: {e}")
+            print("Stack trace:", traceback.format_exc())
     
     def _read_csv(self, filename):
         """Read data from CSV file"""
         if hasattr(self, 'use_local_storage'):
+            print("Using local storage fallback")
             return self._read_local_csv(filename)
         
         try:
             blob = self.bucket.blob(filename)
+            print(f"Attempting to read GCS blob: gs://{self.bucket_name}/{filename}")
+            
             if not blob.exists():
-                print(f"GCS blob not found: {filename}")
+                print(f"GCS blob not found: gs://{self.bucket_name}/{filename}")
                 return []
+            
+            print(f"GCS blob found: {filename}")
+            print(f"Blob size: {blob.size} bytes")
+            print(f"Last modified: {blob.updated}")
             
             content = blob.download_as_string().decode('utf-8')
             reader = csv.DictReader(io.StringIO(content))
@@ -141,18 +160,22 @@ class GCSStorage:
                 ('warnings', int(row['warnings'])),
                 ('alerts', int(row['alerts']))
             ]) for row in reader]
-            print(f"Read {len(data)} records from GCS: {filename}")
+            print(f"Successfully read {len(data)} records from GCS: gs://{self.bucket_name}/{filename}")
             return data
         except Exception as e:
             print(f"Error reading GCS CSV: {e}")
-            return []
+            print("Stack trace:", traceback.format_exc())
+            print("Falling back to local storage")
+            return self._read_local_csv(filename)
     
     def _write_csv(self, filename, data):
         """Write data to CSV file"""
         if hasattr(self, 'use_local_storage'):
+            print("Using local storage fallback")
             return self._write_local_csv(filename, data)
         
         try:
+            print(f"Attempting to write to GCS: gs://{self.bucket_name}/{filename}")
             output = io.StringIO()
             writer = csv.DictWriter(output, fieldnames=['timestamp', 'severes', 'warnings', 'alerts'])
             writer.writeheader()
@@ -160,9 +183,18 @@ class GCSStorage:
             
             blob = self.bucket.blob(filename)
             blob.upload_from_string(output.getvalue(), content_type='text/csv')
-            print(f"Wrote {len(data)} records to GCS: {filename}")
+            
+            print(f"Successfully wrote {len(data)} records to GCS: gs://{self.bucket_name}/{filename}")
+            print(f"Blob size: {blob.size} bytes")
+            print(f"Last modified: {blob.updated}")
+            
+            # Write to local cache as backup
+            self._write_local_csv(filename, data)
         except Exception as e:
-            print(f"Error writing GCS CSV: {e}")
+            print(f"Error writing to GCS: {e}")
+            print("Stack trace:", traceback.format_exc())
+            print("Falling back to local storage")
+            self._write_local_csv(filename, data)
     
     def _validate_data_structure(self, data):
         """Validate data structure and format timestamps"""
@@ -219,6 +251,7 @@ class GCSStorage:
         try:
             current_month = timestamp[:7]  # YYYY-MM
             filename = f"flood_data_{current_month}.csv"
+            print(f"Processing data for {timestamp} to be stored in {filename}")
             
             # Read existing data
             existing_data = self._read_csv(filename)
@@ -241,37 +274,32 @@ class GCSStorage:
             # Write data
             self._write_csv(filename, existing_data)
             print(f"Successfully stored counts for {timestamp}")
+            print(f"Updated file now contains {len(existing_data)} records")
             
         except Exception as e:
             print(f"Error storing counts: {e}")
+            print("Stack trace:", traceback.format_exc())
     
     def get_latest_counts(self):
         """Get the most recent flood counts"""
         try:
             current_month = datetime.now().strftime("%Y-%m")
             filename = f"flood_data_{current_month}.csv"
+            print(f"Fetching latest counts from {filename}")
             
             data = self._read_csv(filename)
             if not data:
-                return OrderedDict([
-                    ('timestamp', datetime.now().isoformat()),
-                    ('severes', 0),
-                    ('warnings', 0),
-                    ('alerts', 0)
-                ])
+                print("No data found, returning default response")
+                return self._create_default_response()[0]
             
             latest = data[-1]
             print(f"Retrieved latest counts for {latest['timestamp']}")
             return latest
         except Exception as e:
             print(f"Error getting latest counts: {e}")
-            return OrderedDict([
-                ('timestamp', datetime.now().isoformat()),
-                ('severes', 0),
-                ('warnings', 0),
-                ('alerts', 0)
-            ])
-    
+            print("Stack trace:", traceback.format_exc())
+            return self._create_default_response()[0]
+
     def get_counts_between_dates(self, start_date, end_date):
         """Get flood counts between two dates with improved error handling"""
         try:
