@@ -8,49 +8,44 @@ from collections import OrderedDict
 import os
 import base64
 import traceback
+import time
+from functools import wraps
+
+def retry_operation(max_attempts=3, delay_seconds=2):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    print(f"Attempt {attempt + 1}/{max_attempts} failed: {str(e)}")
+                    print("Stack trace:", traceback.format_exc())
+                    if attempt < max_attempts - 1:
+                        print(f"Retrying in {delay_seconds} seconds...")
+                        time.sleep(delay_seconds)
+            print(f"All {max_attempts} attempts failed")
+            raise last_exception
+        return wrapper
+    return decorator
 
 class GCSStorage:
     def __init__(self):
         try:
             # Load credentials from environment variable
             credentials_json = os.environ.get('GOOGLE_CLOUD_CREDENTIALS')
-            project_id = os.environ.get('GOOGLE_CLOUD_PROJECT_ID')
+            self.project_id = os.environ.get('GOOGLE_CLOUD_PROJECT_ID')
             
-            if not credentials_json or not project_id:
+            if not credentials_json or not self.project_id:
                 raise EnvironmentError("Missing required Google Cloud credentials")
             
-            print("Attempting to initialize Google Cloud Storage...")
+            print("Initializing Google Cloud Storage...")
+            print(f"Project ID: {self.project_id}")
             
-            # Try to decode and parse credentials in multiple formats
-            credentials_info = None
-            error_messages = []
-            
-            # Try method 1: Direct JSON parsing
-            try:
-                credentials_info = json.loads(credentials_json)
-                print("Successfully parsed credentials as direct JSON")
-            except json.JSONDecodeError as e:
-                error_messages.append(f"Direct JSON parsing failed: {e}")
-                
-                # Try method 2: Base64 decoding
-                try:
-                    decoded = base64.b64decode(credentials_json).decode('utf-8')
-                    credentials_info = json.loads(decoded)
-                    print("Successfully parsed credentials from base64")
-                except Exception as e:
-                    error_messages.append(f"Base64 decoding failed: {e}")
-            
-            if not credentials_info:
-                raise Exception(f"Failed to parse credentials: {'; '.join(error_messages)}")
-            
-            # Verify required fields in credentials
-            required_fields = ['type', 'project_id', 'private_key_id', 'private_key']
-            missing_fields = [field for field in required_fields if field not in credentials_info]
-            if missing_fields:
-                raise Exception(f"Credentials missing required fields: {', '.join(missing_fields)}")
-            
-            self.bucket_name = f"{project_id}-flood-data"
-            print(f"Using bucket: {self.bucket_name}")
+            # Parse credentials
+            credentials_info = self._parse_credentials(credentials_json)
             
             # Initialize client with explicit credentials
             credentials = service_account.Credentials.from_service_account_info(
@@ -58,9 +53,13 @@ class GCSStorage:
             )
             
             self.client = storage.Client(
-                project=project_id,
+                project=self.project_id,
                 credentials=credentials
             )
+            
+            # Set bucket name based on project ID
+            self.bucket_name = f"{self.project_id}-flood-data"
+            print(f"Using bucket: {self.bucket_name}")
             
             # Ensure bucket exists
             self.ensure_bucket_exists()
@@ -75,7 +74,31 @@ class GCSStorage:
             print("Falling back to local file storage")
             self.use_local_storage = True
             os.makedirs('data_cache', exist_ok=True)
-    
+
+    def _parse_credentials(self, credentials_json):
+        """Parse credentials from environment variable"""
+        error_messages = []
+        
+        # Try direct JSON parsing
+        try:
+            credentials_info = json.loads(credentials_json)
+            print("Successfully parsed credentials as direct JSON")
+            return credentials_info
+        except json.JSONDecodeError as e:
+            error_messages.append(f"Direct JSON parsing failed: {e}")
+            
+            # Try base64 decoding
+            try:
+                decoded = base64.b64decode(credentials_json).decode('utf-8')
+                credentials_info = json.loads(decoded)
+                print("Successfully parsed credentials from base64")
+                return credentials_info
+            except Exception as e:
+                error_messages.append(f"Base64 decoding failed: {e}")
+        
+        raise Exception(f"Failed to parse credentials: {'; '.join(error_messages)}")
+
+    @retry_operation()
     def ensure_bucket_exists(self):
         """Ensure the bucket exists, create if it doesn't"""
         try:
@@ -93,7 +116,7 @@ class GCSStorage:
             except Exception as create_error:
                 print(f"Failed to create bucket: {create_error}")
                 raise
-    
+
     def _get_local_path(self, filename):
         """Get path for local file storage"""
         return os.path.join('data_cache', filename)
@@ -133,9 +156,10 @@ class GCSStorage:
         except Exception as e:
             print(f"Error writing local CSV: {e}")
             print("Stack trace:", traceback.format_exc())
-    
+
+    @retry_operation()
     def _read_csv(self, filename):
-        """Read data from CSV file"""
+        """Read data from CSV file with retry logic"""
         if hasattr(self, 'use_local_storage'):
             print("Using local storage fallback")
             return self._read_local_csv(filename)
@@ -160,19 +184,28 @@ class GCSStorage:
                 ('warnings', int(row['warnings'])),
                 ('alerts', int(row['alerts']))
             ]) for row in reader]
+            
+            if not self._validate_data_structure(data):
+                raise ValueError("Invalid data structure in CSV file")
+            
             print(f"Successfully read {len(data)} records from GCS: gs://{self.bucket_name}/{filename}")
             return data
+            
         except Exception as e:
             print(f"Error reading GCS CSV: {e}")
             print("Stack trace:", traceback.format_exc())
             print("Falling back to local storage")
             return self._read_local_csv(filename)
-    
+
+    @retry_operation()
     def _write_csv(self, filename, data):
-        """Write data to CSV file"""
+        """Write data to CSV file with retry logic"""
         if hasattr(self, 'use_local_storage'):
             print("Using local storage fallback")
             return self._write_local_csv(filename, data)
+        
+        if not self._validate_data_structure(data):
+            raise ValueError("Invalid data structure before writing to GCS")
         
         try:
             print(f"Attempting to write to GCS: gs://{self.bucket_name}/{filename}")
@@ -190,12 +223,13 @@ class GCSStorage:
             
             # Write to local cache as backup
             self._write_local_csv(filename, data)
+            
         except Exception as e:
             print(f"Error writing to GCS: {e}")
             print("Stack trace:", traceback.format_exc())
             print("Falling back to local storage")
             self._write_local_csv(filename, data)
-    
+
     def _validate_data_structure(self, data):
         """Validate data structure and format timestamps"""
         if not isinstance(data, list):
