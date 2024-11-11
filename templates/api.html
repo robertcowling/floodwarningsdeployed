@@ -35,16 +35,18 @@
                 <!-- Historical Data Endpoint -->
                 <div class="mb-4">
                     <h4><code class="bg-dark">/api/historical</code></h4>
-                    <p>Returns historical flood warning counts between specified dates.</p>
+                    <p>Returns historical flood warning counts between specified dates with pagination support.</p>
                     
                     <h6>Query Parameters:</h6>
                     <ul>
                         <li><code>start_date</code> (optional) - Start date in YYYY-MM-DD format</li>
                         <li><code>end_date</code> (optional) - End date in YYYY-MM-DD format</li>
+                        <li><code>page</code> (optional) - Page number for pagination (default: 1)</li>
+                        <li><code>per_page</code> (optional) - Number of results per page (default: 100)</li>
                     </ul>
                     
                     <h6>Request Example:</h6>
-                    <pre><code>GET /api/historical?start_date=2024-11-09&end_date=2024-11-10</code></pre>
+                    <pre><code>GET /api/historical?start_date=2024-11-09&end_date=2024-11-10&page=1&per_page=100</code></pre>
                     
                     <h6>Response Example:</h6>
                     <pre><code>[
@@ -91,11 +93,12 @@
                 <h5 class="card-title">Usage Information</h5>
             </div>
             <div class="card-body">
-                <h6>Rate Limiting</h6>
-                <p>The API implements the following rate limits:</p>
+                <h6>Performance Optimizations</h6>
                 <ul>
-                    <li>60 requests per minute per IP address</li>
-                    <li>1000 requests per hour per IP address</li>
+                    <li>Client-side caching with 15-minute expiration</li>
+                    <li>Gzip compression for all responses</li>
+                    <li>Pagination support for large datasets</li>
+                    <li>Chart.js optimizations for smooth rendering</li>
                 </ul>
 
                 <h6>Data Update Frequency</h6>
